@@ -4,12 +4,12 @@ collect_stage1.py
 Aplikasi akuisisi data Tahap 1: gestur tangan paretik untuk fine tuning GRU.
 
 Alur:
-  1. Formulir Lembar Pengumpul Data 1 (identitas tanpa nama/No. RM, kelayakan, consent).
-  2. Cek privasi: pastikan wajah tidak masuk frame (tombol C).
-  3. 4 gestur x 5 pengulangan x 2 detik. SPASI mulai rekam; kamera direkam di
+  1. Formulir Lembar Pengumpul Data 1 (identitas, kelayakan, consent). Nama hanya
+     disimpan di data/stage1/kunci_identitas.csv dan lembar cetak.
+  2. 4 gestur x 5 pengulangan x 2 detik. SPASI mulai rekam; kamera direkam di
      thread terpisah (~30 FPS), MediaPipe memproses frame setelah rekaman selesai.
-  4. Tinjau tiap percobaan: ENTER bentuk penuh, P sebagian, R ulangi, S lewati, N catatan.
-  5. Di akhir: lembar_tahap1.html terisi (cetak dari browser) + data mentah.
+  3. Tinjau tiap percobaan: ENTER bentuk penuh, P sebagian, R ulangi, S lewati, N catatan.
+  4. Di akhir: lembar_tahap1.html terisi (cetak dari browser) + data mentah.
 
 Jalankan dari folder akar proyek:
     python code\\collect_stage1.py                 (pasien: lewat formulir)
@@ -25,17 +25,17 @@ import platform
 import subprocess
 import sys
 import time
-from datetime import date, datetime
+from datetime import date
 
 import cv2
 import numpy as np
 
 from gesture_pipeline import (CAMERA_CONFIG, MEDIAPIPE_CONFIG, create_hands,
                               extract_landmarks, open_camera)
-from stage1_writer import (Stage1SessionWriter, append_participant_registry,
+from stage1_writer import (Stage1SessionWriter, append_identity_key, append_participant_registry,
                            build_protocol, existing_sessions)
 
-APP_VERSION = "collect_stage1 0.3"
+APP_VERSION = "collect_stage1 0.4"
 
 INSTRUCTIONS = {  # Tabel 3.5 proposal / Lembar 1
     "palm": "Buka telapak tangan, jari direntangkan sesuai kemampuan",
@@ -102,7 +102,7 @@ def make_reader(cap):
 def uji_info(args):
     today = date.today().isoformat()
     return {
-        "participant": "P99", "tanggal": today, "usia": "", "jenis_kelamin": "", "tangan_dominan": "",
+        "participant": "P99", "nama": "", "tanggal": today, "usia": "", "jenis_kelamin": "", "tangan_dominan": "",
         "sisi_paretik": args.sisi, "kriteria": {}, "memenuhi_syarat": "uji_coba_peneliti",
         "consent": "", "consent_tanggal": "", "diperiksa_oleh": "", "simpan_video": True,
         "camera": args.camera,
@@ -179,7 +179,8 @@ def main(argv=None, ui_factory=make_ui, form_fn=make_form, reader_factory=make_r
     hand_connections = mp.solutions.hands.HAND_CONNECTIONS
     hands_live = hands_factory()
 
-    participant_info = {k: v for k, v in info.items() if k not in ("camera", "simpan_video")}
+    # Nama TIDAK masuk data olahan (Lembar 1); hanya ke kunci_identitas.csv.
+    participant_info = {k: v for k, v in info.items() if k not in ("camera", "simpan_video", "nama")}
     metadata = {
         "app_version": APP_VERSION,
         "git_commit": git_commit(),
@@ -200,17 +201,21 @@ def main(argv=None, ui_factory=make_ui, form_fn=make_form, reader_factory=make_r
         "landmarks_source": "frame asli tanpa flip (sama dengan baseline camera.py)",
         "display_mirrored": not args.no_mirror,
         "low_detection_warning": LOW_DETECTION_WARNING,
-        "privacy_check": {"confirmed": False, "confirmed_at": None},
+        "privacy_check": {"required": False,
+                          "note": "langkah cek wajah dinonaktifkan atas keputusan peneliti (27-10-2026); "
+                                  "periksa kesesuaian dengan formulir etik"},
     }
     writer = Stage1SessionWriter(args.out, info["participant"], "paretik", info["sisi_paretik"], metadata,
                                  save_video=info["simpan_video"])
     if not args.uji:
         append_participant_registry(args.out, writer.session_id, participant_info)
+        if info.get("nama"):
+            append_identity_key(args.out, writer.session_id, info["participant"], info["nama"], info["tanggal"])
     print(f"[INFO] Sesi {writer.session_id} -> {writer.session_dir}")
 
     ui, reader = None, None
     t0 = time.perf_counter()
-    trial_idx, state = 0, "PRATINJAU"
+    trial_idx, state = 0, "SIAP"
     summary, note, note_editing, quit_pending = None, "", False, False
     last_seq, preview_rgb, detected = -1, None, False
     end_reason = "selesai"
@@ -297,10 +302,6 @@ def main(argv=None, ui_factory=make_ui, form_fn=make_form, reader_factory=make_r
                     continue
                 if key == "quit":
                     quit_pending = True
-                elif state == "PRATINJAU" and key == "c":
-                    writer.set_metadata(privacy_check={
-                        "confirmed": True, "confirmed_at": datetime.now().isoformat(timespec="seconds")})
-                    state = "SIAP"
                 elif state == "SIAP" and key == "space":
                     gesture, rep = protocol[trial_idx]
                     t_rec = reader.start_recording(args.hold)
@@ -337,20 +338,21 @@ def main(argv=None, ui_factory=make_ui, form_fn=make_form, reader_factory=make_r
         report = None
         try:
             from stage1_report import write_report
-            report = write_report(writer.session_dir)
+            report = write_report(writer.session_dir, identity_root=args.out)
         except Exception as e:  # laporan tidak boleh menggagalkan penyimpanan data
             print(f"[PERINGATAN] Lembar HTML gagal dibuat: {e}")
         if ui is not None:
             n_ok = trial_idx
             ui.show_message("Sesi selesai" if end_reason == "selesai" else "Sesi dihentikan",
                             [f"{info['participant']}: {n_ok} dari {len(protocol)} percobaan tercatat.",
-                             "Lembar terisi: lembar_tahap1.html di folder sesi."])
+                             "Lembar cetak: " + (os.path.join(os.path.basename(os.path.dirname(report)), os.path.basename(report))
+                                                if report else "gagal dibuat")])
             time.sleep(0 if argv is not None else 2.0)
             ui.close()
 
     print(f"[INFO] Sesi ditutup ({end_reason}). Data: {writer.session_dir}")
     if report:
-        print(f"[INFO] Lembar terisi: {report}")
+        print(f"[INFO] Lembar untuk dicetak: {report}")
     return 0
 
 

@@ -308,3 +308,34 @@ def existing_sessions(root_dir, participant):
     if not os.path.isdir(pdir):
         return []
     return sorted(d for d in os.listdir(pdir) if os.path.isdir(os.path.join(pdir, d)))
+
+
+IDENTITY_KEY = "kunci_identitas.csv"
+IDENTITY_KEY_COLUMNS = ["session_id", "participant", "nama", "tanggal"]
+
+
+def append_identity_key(root_dir, session_id, participant, nama, tanggal):
+    """
+    File penghubung kode partisipan <-> nama (Lembar 1: "hanya untuk keperluan
+    penghubung"). Terpisah dari semua data olahan; jangan dibagikan atau di-commit.
+    """
+    os.makedirs(root_dir, exist_ok=True)
+    path = os.path.join(root_dir, IDENTITY_KEY)
+    new = not os.path.exists(path)
+    with open(path, "a", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=IDENTITY_KEY_COLUMNS)
+        if new:
+            w.writeheader()
+        w.writerow({"session_id": session_id, "participant": participant, "nama": nama, "tanggal": tanggal})
+    return path
+
+
+def load_identity(root_dir, session_id):
+    path = os.path.join(root_dir, IDENTITY_KEY)
+    if not os.path.exists(path):
+        return {}
+    with open(path, newline="", encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            if row["session_id"] == session_id:
+                return row
+    return {}

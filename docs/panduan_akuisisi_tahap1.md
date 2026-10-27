@@ -25,16 +25,15 @@ python code\collect_stage1.py --uji --sisi kanan
 python code\collect_stage1.py
 ```
 
-1. **Formulir (Lembar 1 bagian I–II).** Isi kode partisipan (P01–P15), tanggal, usia, jenis kelamin,
+1. **Formulir (Lembar 1 bagian I–II).** Isi kode partisipan (P01–P15), nama/inisial, tanggal, usia, jenis kelamin,
    tangan dominan sebelum sakit, sisi paretik, kriteria inklusi/eksklusi, informed consent, dan nama dokter pemeriksa.
    Tombol **Mulai perekaman** hanya berhasil bila pasien memenuhi syarat dan consent sudah ditandatangani.
-   **Nama/inisial dan No. RM hanya ditulis tangan di lembar kertas**, tidak dimasukkan ke aplikasi.
-2. **Cek privasi.** Atur kamera (±50 cm dari tangan) sehingga hanya tangan yang terlihat. Tekan **C**.
-3. **Perekaman.** Urutan: palm → fist → grabbing → thumb_index, masing-masing 5 kali.
+   Nama hanya disimpan di `data\stage1\kunci_identitas.csv` dan lembar cetak, **tidak** di data olahan.
+   No. RM ditulis tangan di lembar bila perlu.
+2. **Perekaman.** Kamera ±50 cm dari tangan. Urutan: palm → fist → grabbing → thumb_index, masing-masing 5 kali.
 
 | Tombol | Fungsi |
 | --- | --- |
-| C | Konfirmasi cek privasi (sekali di awal) |
 | SPASI | Mulai rekam 2 detik, tekan saat gestur pasien sudah terbentuk |
 | ENTER | Terima, bentuk gestur **penuh** |
 | P | Terima, bentuk gestur **sebagian** |
@@ -49,14 +48,21 @@ Jika deteksi di layar tinjau di bawah 80%, pertimbangkan R. Hentikan kapan saja 
 
 ```
 data\stage1\participants.csv              satu baris per sesi (kode, usia, JK, dominan, sisi, kelayakan)
+data\stage1\kunci_identitas.csv           penghubung kode <-> nama (jangan dibagikan)
+data\stage1\lembar_cetak\<session_id>.html Lembar 1 terisi MEMUAT NAMA: buka di browser, Ctrl+P untuk cetak/PDF
 data\stage1\P01\P01_S1_<tanggal>_<jam>\
-    lembar_tahap1.html   Lembar 1 terisi: buka di browser, Ctrl+P untuk cetak/PDF
-    session.json         metadata sesi (kamera, MediaPipe, versi kode, cek privasi)
+    lembar_tahap1.html   salinan lembar TANPA nama (ikut data sesi)
+    session.json         metadata sesi (kamera, MediaPipe, versi kode)
     frames.csv           landmark mentah semua frame (±60 per percobaan)
     trials.csv           daftar percobaan, termasuk yang diulang/dilewati
     videos\              satu video per percobaan
 ```
 
+Wajah boleh terlihat di video (keputusan peneliti), **dengan syarat** formulir etik dan informed consent
+sudah direvisi dan disetujui sebelum pengambilan data pasien. Selama revisi etik belum disetujui,
+arahkan kamera ke tangan agar wajah tidak terekam.
+
+Folder `kunci_identitas.csv`, `lembar_cetak\`, dan `videos\` tidak boleh di-commit atau dibagikan.
 Folder `data\` berisi data pasien: **jangan** di-commit ke git atau dibagikan di luar tim penelitian.
 Simpan maksimal 1 tahun setelah penelitian selesai, sesuai formulir etik.
 Bagian VI lembar (sampling 5 FPS, data dibuang, record valid) diisi oleh skrip ekspor.

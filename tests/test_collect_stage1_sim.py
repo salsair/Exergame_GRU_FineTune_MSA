@@ -1,6 +1,6 @@
 """
 Simulasi end-to-end collect_stage1.main() dengan kamera, pembaca kamera, MediaPipe,
-dan UI palsu. Memastikan alur formulir -> cek privasi -> SIAP -> REKAM -> PROSES ->
+dan UI palsu. Memastikan alur formulir -> SIAP -> REKAM -> PROSES ->
 TINJAU (penuh/sebagian/ulang/lewati/catatan) dan penyimpanan berjalan.
 
 Uji ini TIDAK membuktikan bahwa kamera, MediaPipe, Pygame, atau tkinter asli
@@ -192,7 +192,7 @@ def one_trial(decision_key, idle_after_space=70):
 
 
 def form_info(code="P03", side="kiri"):
-    return {"participant": code, "tanggal": "2026-11-03", "usia": "58", "jenis_kelamin": "laki-laki",
+    return {"participant": code, "nama": "Budi Santoso", "tanggal": "2026-11-03", "usia": "58", "jenis_kelamin": "laki-laki",
             "tangan_dominan": "kanan", "sisi_paretik": side,
             "kriteria": {"inklusi_stroke": "ya"}, "memenuhi_syarat": "memenuhi",
             "consent": "ya", "consent_tanggal": "2026-11-03", "diperiksa_oleh": "dr. Uji",
@@ -246,8 +246,7 @@ class TestCollectSimulation(unittest.TestCase):
 
     # ------------------------------------------------------------------
     def test_full_protocol_penuh_sebagian_redo_skip_note(self):
-        keys = [IDLE, "c"]                                    # cek privasi
-        keys += one_trial("r")                                # palm r1 a1 -> ulang
+        keys = one_trial("r")                                # palm r1 a1 -> ulang
         keys += one_trial("enter")                            # palm r1 a2 -> penuh
         keys += one_trial("p")                                # palm r2 -> sebagian
         keys += one_trial("enter") * 2                        # palm r3, r4
@@ -282,7 +281,7 @@ class TestCollectSimulation(unittest.TestCase):
         with open(os.path.join(sdir, "session.json"), encoding="utf-8") as f:
             meta = json.load(f)
         self.assertEqual(meta["end_reason"], "selesai")
-        self.assertTrue(meta["privacy_check"]["confirmed"])
+        self.assertFalse(meta["privacy_check"]["required"])
         self.assertEqual(meta["participant_info"]["tangan_dominan"], "kanan")
         self.assertEqual(meta["hand_side"], "kiri")
         self.assertEqual(meta["camera_requested"]["fourcc"], "MJPG")
@@ -301,23 +300,38 @@ class TestCollectSimulation(unittest.TestCase):
         self.assertTrue(self.ui.closed and self.reader.stopped)
         self.assertEqual(self.form_calls, [[]])
 
-    def test_space_ignored_before_privacy_check(self):
-        keys = [IDLE, "space", "space", "c"] + one_trial("enter")
-        self.run_app(keys)
+    def test_name_only_in_identity_key_and_printed_sheet(self):
+        self.run_app(one_trial("enter") * 2)
+        sdir = self.session_dir()
+        for name in ("session.json", "trials.csv", "frames.csv"):
+            with open(os.path.join(sdir, name), encoding="utf-8") as f:
+                self.assertNotIn("Budi", f.read(), name)
+        with open(os.path.join(self.tmp, "participants.csv"), encoding="utf-8") as f:
+            self.assertNotIn("Budi", f.read())
+        key = read_csv(os.path.join(self.tmp, "kunci_identitas.csv"))
+        self.assertEqual(len(key), 1)
+        self.assertEqual((key[0]["participant"], key[0]["nama"]), ("P03", "Budi Santoso"))
+        self.assertEqual(key[0]["session_id"], os.path.basename(sdir))
+        with open(os.path.join(sdir, "lembar_tahap1.html"), encoding="utf-8") as f:
+            self.assertNotIn("Budi", f.read())               # lembar di folder sesi tanpa nama
+        printed = os.path.join(self.tmp, "lembar_cetak", os.path.basename(sdir) + ".html")
+        with open(printed, encoding="utf-8") as f:
+            self.assertIn("Budi Santoso", f.read())          # lembar cetak di luar folder sesi
+
+    def test_recording_starts_immediately(self):
+        self.run_app(one_trial("enter"))
         trials = read_csv(os.path.join(self.session_dir(), "trials.csv"))
-        self.assertEqual(trials[0]["trial_id"], "palm_r1")
-        self.assertEqual(trials[0]["decision"], "accepted")
-        self.assertEqual(sum(t["accepted"] == "1" for t in trials), 1)
+        self.assertEqual((trials[0]["trial_id"], trials[0]["decision"]), ("palm_r1", "accepted"))
 
     def test_states_rendered(self):
-        self.run_app([IDLE, "c"] + one_trial("enter") * 20)
+        self.run_app(one_trial("enter") * 20)
         states = {v["state"] for v in self.ui.views}
-        self.assertEqual(states, {"PRATINJAU", "SIAP", "REKAM", "PROSES", "TINJAU"})
+        self.assertEqual(states, {"SIAP", "REKAM", "PROSES", "TINJAU"})
         tinjau = [v for v in self.ui.views if v["state"] == "TINJAU"]
         self.assertTrue(all(v["video_name"] and v["video_name"].endswith(".mp4") for v in tinjau))
 
     def test_quit_while_recording_marks_abort(self):
-        keys = [IDLE, "c"] + one_trial("enter") + [IDLE, "space"] + [IDLE] * 20 + ["quit", "quit"]
+        keys = one_trial("enter") + [IDLE, "space"] + [IDLE] * 20 + ["quit", "quit"]
         self.run_app(keys)
         sdir = self.session_dir()
         trials = read_csv(os.path.join(sdir, "trials.csv"))
@@ -327,14 +341,14 @@ class TestCollectSimulation(unittest.TestCase):
         self.assertTrue(os.path.exists(os.path.join(sdir, "lembar_tahap1.html")))
 
     def test_note_cancel_restores_previous(self):
-        keys = [IDLE, "c", IDLE, "space"] + [IDLE] * 70 + ["n", ("char:x",), "cancel", "enter"]
+        keys = [IDLE, "space"] + [IDLE] * 70 + ["n", ("char:x",), "cancel", "enter"]
         self.run_app(keys)
         t = read_csv(os.path.join(self.session_dir(), "trials.csv"))[0]
         self.assertEqual(t["note"], "")
         self.assertEqual(t["gesture_form"], "penuh")
 
     def test_detection_rate_is_recorded(self):
-        self.run_app([IDLE, "c"] + one_trial("enter"), detect_pattern=lambda n: n % 2 == 0)
+        self.run_app(one_trial("enter"), detect_pattern=lambda n: n % 2 == 0)
         t = read_csv(os.path.join(self.session_dir(), "trials.csv"))[0]
         self.assertGreater(float(t["detection_rate"]), 0.3)
         self.assertLess(float(t["detection_rate"]), 0.7)
@@ -345,15 +359,16 @@ class TestCollectSimulation(unittest.TestCase):
         self.assertEqual(os.listdir(self.tmp), [])
 
     def test_uji_mode_uses_p99_without_form_or_registry(self):
-        self.run_app([IDLE, "c"] + one_trial("enter"), extra_args=["--uji", "--sisi", "kanan"])
+        self.run_app(one_trial("enter"), extra_args=["--uji", "--sisi", "kanan"])
         self.assertEqual(self.form_calls, [])
         self.assertTrue(os.path.isdir(os.path.join(self.tmp, "P99")))
         self.assertFalse(os.path.exists(os.path.join(self.tmp, "participants.csv")))
+        self.assertFalse(os.path.exists(os.path.join(self.tmp, "kunci_identitas.csv")))
 
     def test_no_video_option(self):
         info = form_info()
         info["simpan_video"] = False
-        rc, cv2 = self.run_app([IDLE, "c"] + one_trial("enter"), info=info)
+        rc, cv2 = self.run_app(one_trial("enter"), info=info)
         self.assertEqual(cv2.written_video_frames, 0)
         self.assertFalse(os.path.exists(os.path.join(self.session_dir(), "videos")))
 

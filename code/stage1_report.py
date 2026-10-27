@@ -5,7 +5,8 @@ Membuat lembar HTML terisi yang mengikuti susunan Lembar Pengumpul Data 1
 (bagian I, II, III; bagian VI diisi setelah skrip ekspor).
 
 Buka file di browser lalu Ctrl+P untuk mencetak atau menyimpan sebagai PDF.
-Nama/inisial dan No. RM dibiarkan kosong untuk ditulis tangan.
+Nama/inisial diambil dari kunci_identitas.csv (bila ada); No. RM dibiarkan kosong
+untuk ditulis tangan. File HTML ini memuat nama: perlakukan seperti lembar kertas.
 
     python code\\stage1_report.py data\\stage1\\P01\\<session_id>
 """
@@ -47,8 +48,9 @@ def final_trials(trials, protocol):
     return rows
 
 
-def render(meta, trials):
+def render(meta, trials, identity=None):
     info = meta.get("participant_info", {})
+    nama = (identity or {}).get("nama", "")
     crit = info.get("kriteria", {})
     proto = meta.get("protocol", {})
     order = proto.get("gestures_in_order", ["palm", "fist", "grabbing", "thumb_index"])
@@ -84,7 +86,6 @@ def render(meta, trials):
     inc_rows = "".join(f"<tr><td>{e(label)}</td><td>{yn(k, crit.get(k))}</td></tr>" for k, label in INCLUSION_CRITERIA)
     exc_rows = "".join(f"<tr><td>{e(label)}</td><td>{yn(k, crit.get(k))}</td></tr>" for k, label in EXCLUSION_CRITERIA)
     eligible = info.get("memenuhi_syarat") == "memenuhi"
-    priv = meta.get("privacy_check", {})
     n_ok = sum(1 for r in rows if r["final"] and r["final"]["decision"] == "accepted")
 
     return f"""<!doctype html>
@@ -111,7 +112,7 @@ Sesi <span class="mono">{e(meta.get('session_id'))}</span> &middot; versi kode <
 <table>
 <tr><th style="width:28%">Kode partisipan</th><td>{e(info.get('participant'))}</td>
     <th style="width:22%">Tanggal pengambilan data</th><td>{e(info.get('tanggal'))}</td></tr>
-<tr><th>Nama/inisial *</th><td><span class="blank"></span></td><th>No. rekam medis *</th><td><span class="blank"></span></td></tr>
+<tr><th>Nama/inisial *</th><td>{e(nama) if nama else '<span class="blank"></span>'}</td><th>No. rekam medis *</th><td><span class="blank"></span></td></tr>
 <tr><th>Usia</th><td>{e(info.get('usia'))} tahun</td><th>Jenis kelamin</th>
     <td>{_box(info.get('jenis_kelamin') == 'laki-laki')} Laki-laki &nbsp; {_box(info.get('jenis_kelamin') == 'perempuan')} Perempuan</td></tr>
 <tr><th>Tangan dominan (sebelum sakit)</th>
@@ -134,8 +135,7 @@ Sesi <span class="mono">{e(meta.get('session_id'))}</span> &middot; versi kode <
 <th>Bentuk gestur</th><th>Nama berkas video</th><th>Catatan</th></tr>
 {''.join(trial_rows)}
 </table>
-<div class="note">Diterima {n_ok} dari {len(rows)} percobaan. Pemeriksaan privasi kamera (wajah tidak masuk frame):
-{_box(bool(priv.get('confirmed')))} dikonfirmasi {e(priv.get('confirmed_at', ''))}. Sesi berakhir: {e(meta.get('end_reason'))}.</div>
+<div class="note">Diterima {n_ok} dari {len(rows)} percobaan. Sesi berakhir: {e(meta.get('end_reason'))}.</div>
 
 <h2>VI. Pasca-pemrosesan Data</h2>
 <div class="note">Diisi otomatis oleh skrip ekspor (sampling 5 FPS dan pemeriksaan kualitas) pada tahap berikutnya.</div>
@@ -145,19 +145,38 @@ Sesi <span class="mono">{e(meta.get('session_id'))}</span> &middot; versi kode <
 </body></html>"""
 
 
-def write_report(session_dir):
+PRINT_DIR = "lembar_cetak"
+
+
+def write_report(session_dir, identity_root=None):
+    """
+    Tulis lembar_tahap1.html TANPA nama di folder sesi (aman dibagikan bersama
+    data). Jika nama ada di kunci identitas, tulis juga lembar bernama untuk dicetak
+    di <identity_root>/lembar_cetak/<session_id>.html (di luar folder sesi).
+    Mengembalikan path lembar yang sebaiknya dicetak.
+    """
     with open(os.path.join(session_dir, "session.json"), encoding="utf-8") as f:
         meta = json.load(f)
     with open(os.path.join(session_dir, "trials.csv"), newline="", encoding="utf-8") as f:
         trials = list(csv.DictReader(f))
     path = os.path.join(session_dir, REPORT_NAME)
     with open(path, "w", encoding="utf-8") as f:
-        f.write(render(meta, trials))
+        f.write(render(meta, trials, {}))
+    if identity_root:
+        from stage1_writer import load_identity
+        identity = load_identity(identity_root, meta.get("session_id"))
+        if identity.get("nama"):
+            out_dir = os.path.join(identity_root, PRINT_DIR)
+            os.makedirs(out_dir, exist_ok=True)
+            path = os.path.join(out_dir, f"{meta.get('session_id')}.html")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(render(meta, trials, identity))
     return path
-
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print(__doc__)
         sys.exit(2)
-    print(write_report(sys.argv[1]))
+    session_dir = sys.argv[1]
+    root = os.path.dirname(os.path.dirname(os.path.abspath(session_dir)))
+    print(write_report(session_dir, identity_root=root))

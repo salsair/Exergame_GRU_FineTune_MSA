@@ -19,7 +19,7 @@ TODAY = date(2026, 11, 3)
 
 
 def valid_values(**over):
-    v = {"participant": "p04", "tanggal": "2026-11-03", "usia": "61", "jenis_kelamin": "perempuan",
+    v = {"participant": "p04", "nama": "  Siti   A. ", "tanggal": "2026-11-03", "usia": "61", "jenis_kelamin": "perempuan",
          "tangan_dominan": "kanan", "sisi_paretik": "kiri", "consent": "ya",
          "consent_tanggal": "2026-11-02", "diperiksa_oleh": "dr. A", "camera": "0", "simpan_video": True}
     v.update({k: "ya" for k, _ in INCLUSION_CRITERIA})
@@ -35,8 +35,12 @@ class TestForm(unittest.TestCase):
         self.assertEqual(info["participant"], "P04")            # dinormalisasi ke huruf besar
         self.assertEqual(info["memenuhi_syarat"], "memenuhi")
         self.assertEqual(info["sisi_paretik"], "kiri")
-        self.assertNotIn("nama", info)
+        self.assertEqual(info["nama"], "Siti A.")               # spasi berlebih dirapikan
         self.assertNotIn("no_rm", info)
+
+    def test_name_required(self):
+        _, errors = validate_form(valid_values(nama="   "), today=TODAY)
+        self.assertTrue(any("Nama" in e for e in errors))
 
     def test_name_rejected_as_code(self):
         _, errors = validate_form(valid_values(participant="Budi"), today=TODAY)
@@ -106,7 +110,8 @@ class TestReport(unittest.TestCase):
                              "repetitions_per_gesture": 5},
                 "privacy_check": {"confirmed": True, "confirmed_at": "2026-11-03T09:00:00"},
                 "end_reason": "operator_keluar"}
-        out = render(meta, trials)
+        out = render(meta, trials, {"nama": "Siti <A>"})
+        self.assertIn("Siti &lt;A&gt;", out)
         self.assertIn("palm_r1_a2.mp4", out)
         self.assertIn("jari &lt;manis&gt; kaku", out)           # teks catatan di-escape
         self.assertIn("belum direkam", out)

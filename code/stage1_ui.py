@@ -5,7 +5,6 @@ Tampilan aplikasi akuisisi Tahap 1 berbasis Pygame (teks anti-alias, rasio
 gambar kamera terjaga, kartu contoh gestur di kanan atas).
 
 Status layar:
-  PRATINJAU  cek privasi: pastikan hanya tangan terlihat (C untuk konfirmasi)
   SIAP       tunggu SPASI
   REKAM      merekam 2 detik
   PROSES     MediaPipe memproses frame rekaman
@@ -171,21 +170,6 @@ class Stage1UI:
         sw, sh = self.size
         self._camera(frame_rgb)
         state, gesture = view["state"], view["gesture"]
-
-        if state == "PRATINJAU":
-            box = pygame.Rect(0, 0, sw, 150)
-            self._panel(box)
-            self._text("Cek privasi sebelum mulai", self.f_title, WHITE, (24, 16))
-            self._text("Atur kamera sehingga hanya tangan yang terlihat. Wajah pasien tidak boleh masuk frame.",
-                       self.f_body, MUTED, (24, 60))
-            self._text(f"{view['participant']}  ·  tangan paretik {view['side']}", self.f_body, BLUE, (24, 96))
-            bottom = pygame.Rect(0, sh - 84, sw, 84)
-            self._panel(bottom)
-            self._text("Tekan C bila wajah tidak terlihat", self.f_title, WHITE, (24, bottom.centery), "midleft")
-            self._text("Q / ESC: keluar", self.f_small, MUTED, (sw - 24, bottom.centery), "midright")
-            self._quit_overlay(view)
-            pygame.display.flip()
-            return
 
         # --- bilah atas -------------------------------------------------
         top = pygame.Rect(0, 0, sw, 92)

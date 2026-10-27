@@ -3,9 +3,11 @@ stage1_form.py
 ==============
 Formulir Lembar Pengumpul Data 1, bagian I (Identitas) dan II (Kelayakan).
 
-Nama/inisial dan No. rekam medis TIDAK ditanyakan: sesuai catatan Lembar 1
-("hanya dicatat pada lembar ini untuk keperluan penghubung; tidak dimasukkan
-ke data olahan") dan formulir etik, keduanya hanya ditulis tangan di lembar.
+Nama/inisial ditanyakan untuk lembar cetak dan file penghubung terpisah
+(data/stage1/kunci_identitas.csv). Sesuai catatan Lembar 1 ("hanya dicatat pada
+lembar ini untuk keperluan penghubung; tidak dimasukkan ke data olahan"), nama
+TIDAK disimpan di session.json, frames.csv, trials.csv, atau participants.csv.
+No. rekam medis tidak ditanyakan (ditulis tangan di lembar bila perlu).
 
 Logika (validasi, kelayakan) dipisahkan dari tampilan tkinter agar bisa diuji.
 """
@@ -32,6 +34,7 @@ EXCLUSION_CRITERIA = [  # Tabel 3.4 proposal / Lembar 1 bagian II
 
 FIELD_LABELS = {
     "participant": "Kode partisipan",
+    "nama": "Nama/inisial",
     "tanggal": "Tanggal pengambilan data",
     "usia": "Usia",
     "jenis_kelamin": "Jenis kelamin",
@@ -80,6 +83,13 @@ def validate_form(values, today=None):
     if not PARTICIPANT_PATTERN.match(code):
         errors.append("Kode partisipan harus berformat P01-P99 (bukan nama atau No. RM).")
     info["participant"] = code
+
+    nama = " ".join((values.get("nama") or "").split())
+    if not nama:
+        errors.append("Nama/inisial harus diisi.")
+    elif len(nama) > 60:
+        errors.append("Nama/inisial maksimal 60 karakter.")
+    info["nama"] = nama
 
     d = _parse_date(values.get("tanggal", ""))
     if d is None:
@@ -178,7 +188,7 @@ def ask_participant_info(existing_sessions_fn=None, today=None):
     canvas.bind_all("<MouseWheel>", lambda e: canvas.yview_scroll(int(-e.delta / 120), "units"))
 
     v = {
-        "participant": tk.StringVar(), "tanggal": tk.StringVar(value=today.isoformat()),
+        "participant": tk.StringVar(), "nama": tk.StringVar(), "tanggal": tk.StringVar(value=today.isoformat()),
         "usia": tk.StringVar(), "jenis_kelamin": tk.StringVar(), "tangan_dominan": tk.StringVar(),
         "sisi_paretik": tk.StringVar(), "consent": tk.StringVar(),
         "consent_tanggal": tk.StringVar(value=today.isoformat()), "diperiksa_oleh": tk.StringVar(),
@@ -209,6 +219,9 @@ def ask_participant_info(existing_sessions_fn=None, today=None):
     ttk.Label(sec1, text="P01-P15 untuk pasien, P99 untuk uji coba peneliti.", style="Note.TLabel").grid(
         row=r, column=1, sticky="w")
     r += 1
+    ttk.Label(sec1, text="Nama/inisial").grid(row=r, column=0, sticky="w", padx=(0, 12), pady=3)
+    ttk.Entry(sec1, textvariable=v["nama"], width=40).grid(row=r, column=1, sticky="w", pady=3)
+    r += 1
     ttk.Label(sec1, text="Tanggal pengambilan data").grid(row=r, column=0, sticky="w", padx=(0, 12), pady=3)
     ttk.Entry(sec1, textvariable=v["tanggal"], width=14).grid(row=r, column=1, sticky="w", pady=3)
     r += 1
@@ -224,8 +237,8 @@ def ask_participant_info(existing_sessions_fn=None, today=None):
     ttk.Label(sec1, text="Sisi paretik (yang direkam)").grid(row=r, column=0, sticky="w", padx=(0, 12))
     radio_row(sec1, v["sisi_paretik"], [("kanan", "Kanan"), ("kiri", "Kiri")], r, 1)
     r += 1
-    ttk.Label(sec1, text="Nama/inisial dan No. rekam medis ditulis tangan di lembar kertas saja; "
-                         "tidak disimpan di aplikasi.", style="Note.TLabel").grid(
+    ttk.Label(sec1, text="Nama hanya disimpan di kunci_identitas.csv dan lembar cetak, tidak masuk data olahan. "
+                         "No. rekam medis ditulis tangan di lembar.", style="Note.TLabel").grid(
         row=r, column=0, columnspan=2, sticky="w", pady=(4, 0))
 
     # --- II. Kelayakan ----------------------------------------------------
