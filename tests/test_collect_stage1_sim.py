@@ -124,8 +124,27 @@ def install_fakes(keys, clock, detect_pattern=None):
     return cv2
 
 
-IDLE = 255
-SPACE, ENTER = ord(" "), 13
+IDLE = None
+SPACE, ENTER = "space", "enter"
+
+
+class FakeUI:
+    """Pengganti Stage1UI: satu tombol logis per frame, mencatat view yang dirender."""
+    def __init__(self, keys):
+        self.keys = iter(keys)
+        self.views = []
+        self.closed = False
+
+    def poll(self):
+        k = next(self.keys, "quit")
+        return [] if k is None else [k]
+
+    def render(self, frame_rgb, view):
+        assert frame_rgb.ndim == 3 and frame_rgb.shape[2] == 3
+        self.views.append(dict(view))
+
+    def close(self):
+        self.closed = True
 
 
 def one_trial(decision_key, idle_after_space=70):
@@ -162,16 +181,18 @@ class TestCollectSimulation(unittest.TestCase):
         collect_stage1.time.perf_counter = clock.perf_counter
         sys.argv = ["collect_stage1.py", "--participant", "P03", "--sisi", "kiri",
                     "--out", self.tmp, *extra_args]
-        rc = collect_stage1.main()
+        self.ui = FakeUI(keys)
+        rc = collect_stage1.main(ui_factory=lambda: self.ui)
+        self.assertTrue(self.ui.closed)
         sessions = os.listdir(os.path.join(self.tmp, "P03"))
         self.assertEqual(len(sessions), 1)
         return rc, os.path.join(self.tmp, "P03", sessions[0]), cv2
 
     def test_full_protocol_with_one_redo_and_one_skip(self):
-        keys = one_trial(ord("r"))                     # palm r1 percobaan 1 -> ulang
+        keys = one_trial("r")                     # palm r1 percobaan 1 -> ulang
         keys += one_trial(ENTER)                       # palm r1 percobaan 2 -> terima
         keys += one_trial(ENTER) * 3                   # palm r2..r4
-        keys += one_trial(ord("s"))                    # palm r5 -> lewati
+        keys += one_trial("s")                    # palm r5 -> lewati
         keys += one_trial(ENTER) * 15                  # fist, grabbing, thumb_index
         rc, sdir, cv2 = self.run_app(keys)
         self.assertEqual(rc, 0)
@@ -204,7 +225,7 @@ class TestCollectSimulation(unittest.TestCase):
 
     def test_quit_midway_keeps_data_and_marks_abort(self):
         keys = one_trial(ENTER) * 2
-        keys += [IDLE, SPACE] + [IDLE] * 20 + [ord("q"), ord("q")]   # keluar saat merekam
+        keys += [IDLE, SPACE] + [IDLE] * 20 + ["quit", "quit"]   # keluar saat merekam
         rc, sdir, _ = self.run_app(keys)
         trials = read_csv(os.path.join(sdir, "trials.csv"))
         self.assertEqual([t["decision"] for t in trials], ["accepted", "accepted", "aborted"])
@@ -212,7 +233,7 @@ class TestCollectSimulation(unittest.TestCase):
             self.assertEqual(json.load(f)["end_reason"], "operator_keluar")
 
     def test_single_q_is_cancelled_by_other_key(self):
-        keys = [IDLE, ord("q"), ord("x")] + one_trial(ENTER)   # q lalu batal
+        keys = [IDLE, "quit", "other"] + one_trial(ENTER)   # q lalu batal
         rc, sdir, _ = self.run_app(keys)
         trials = read_csv(os.path.join(sdir, "trials.csv"))
         self.assertEqual(trials[0]["decision"], "accepted")
@@ -222,6 +243,16 @@ class TestCollectSimulation(unittest.TestCase):
         rc, sdir, _ = self.run_app(keys, detect_pattern=lambda n: n % 2 == 0)
         t = read_csv(os.path.join(sdir, "trials.csv"))[0]
         self.assertAlmostEqual(float(t["detection_rate"]), 0.5, delta=0.02)
+
+    def test_views_cover_all_states_and_gestures(self):
+        self.run_app(one_trial(ENTER) * 20)
+        states = {v["state"] for v in self.ui.views}
+        self.assertEqual(states, {"SIAP", "REKAM", "TINJAU"})
+        self.assertEqual({v["gesture"] for v in self.ui.views}, {"palm", "fist", "grabbing", "thumb_index"})
+        tinjau = [v for v in self.ui.views if v["state"] == "TINJAU"]
+        self.assertTrue(all(v["summary"] is not None for v in tinjau))
+        rekam = [v["remaining"] for v in self.ui.views if v["state"] == "REKAM"]
+        self.assertTrue(all(0.0 <= r <= 2.0 for r in rekam))
 
     def test_no_video_flag(self):
         rc, sdir, cv2 = self.run_app(one_trial(ENTER), extra_args=["--no-video"])
@@ -235,7 +266,7 @@ class TestCollectSimulation(unittest.TestCase):
             sys.modules.pop(m, None)
         import collect_stage1
         sys.argv = ["collect_stage1.py", "--participant", "Budi", "--sisi", "kiri", "--out", self.tmp]
-        self.assertEqual(collect_stage1.main(), 2)
+        self.assertEqual(collect_stage1.main(ui_factory=lambda: FakeUI([])), 2)
         self.assertEqual(os.listdir(self.tmp), [])
 
 

@@ -36,7 +36,7 @@ from gesture_pipeline import (CAMERA_CONFIG, MEDIAPIPE_CONFIG, create_hands,
                               extract_landmarks, open_camera)
 from stage1_writer import Stage1SessionWriter, build_protocol, validate_participant
 
-APP_VERSION = "collect_stage1 0.1"
+APP_VERSION = "collect_stage1 0.2"
 
 INSTRUCTIONS = {  # Tabel 3.5 proposal
     "palm": "Buka telapak tangan, jari direntangkan sesuai kemampuan",
@@ -44,12 +44,11 @@ INSTRUCTIONS = {  # Tabel 3.5 proposal
     "grabbing": "Lengkungkan jari-jari seperti mencengkeram",
     "thumb_index": "Rentangkan ibu jari dan telunjuk membentuk huruf L",
 }
-DISPLAY_NAMES = {"palm": "PALM", "fist": "FIST", "grabbing": "GRABBING", "thumb_index": "THUMB_INDEX"}
 
 LOW_DETECTION_WARNING = 0.80   # peringatan saja; keputusan tetap di tangan operator
-WINDOW = "Akuisisi Tahap 1"
-
-GREEN, RED, YELLOW, WHITE, BLACK = (60, 200, 60), (60, 60, 230), (0, 210, 255), (255, 255, 255), (0, 0, 0)
+WINDOW_TITLE = "Akuisisi Tahap 1"
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+IMAGES_DIR = os.path.join(PROJECT_ROOT, "graphics", "stage1")
 
 
 def parse_args():
@@ -84,40 +83,12 @@ def library_versions():
             "mediapipe": getattr(mp, "__version__", "unknown"), "numpy": np.__version__}
 
 
-def put(img, text, org, color=WHITE, scale=0.7, thick=2):
-    cv2.putText(img, text, org, cv2.FONT_HERSHEY_SIMPLEX, scale, BLACK, thick + 3, cv2.LINE_AA)
-    cv2.putText(img, text, org, cv2.FONT_HERSHEY_SIMPLEX, scale, color, thick, cv2.LINE_AA)
+def make_ui():
+    from stage1_ui import Stage1UI
+    return Stage1UI(WINDOW_TITLE, INSTRUCTIONS, IMAGES_DIR)
 
 
-def draw_overlay(img, state, trial_idx, n_trials, gesture, rep, reps, detected, info):
-    h, w = img.shape[:2]
-    cv2.rectangle(img, (0, 0), (w, 118), BLACK, -1)
-    put(img, f"Percobaan {trial_idx + 1}/{n_trials}   {DISPLAY_NAMES[gesture]}  (ulangan {rep}/{reps})",
-        (16, 34), WHITE, 0.8)
-    put(img, INSTRUCTIONS[gesture], (16, 68), YELLOW, 0.65)
-
-    det_color = GREEN if detected else RED
-    put(img, "Tangan terdeteksi" if detected else "Tangan TIDAK terdeteksi", (w - 330, 34), det_color, 0.65)
-
-    if state == "SIAP":
-        put(img, "SIAP: tekan SPASI saat gestur sudah terbentuk", (16, 104), WHITE, 0.6)
-    elif state == "REKAM":
-        remaining = info["remaining"]
-        put(img, f"MEREKAM... {remaining:0.1f} s", (16, 104), RED, 0.7)
-        cv2.rectangle(img, (0, 0), (w - 1, h - 1), RED, 8)
-    elif state == "TINJAU":
-        s = info["summary"]
-        color = GREEN if s["detection_rate"] >= LOW_DETECTION_WARNING else YELLOW
-        put(img, f"{s['n_frames']} frame, deteksi {s['detection_rate'] * 100:.0f}%, "
-                 f"{s['effective_fps']:.1f} FPS   ENTER=terima  R=ulang  S=lewati",
-            (16, 104), color, 0.6)
-        if s["detection_rate"] < LOW_DETECTION_WARNING:
-            put(img, "Peringatan: deteksi rendah, pertimbangkan ulang (R)", (16, h - 20), YELLOW, 0.65)
-    if info.get("quit_pending"):
-        put(img, "Tekan Q/ESC sekali lagi untuk keluar, tombol lain untuk batal", (16, h - 52), RED, 0.65)
-
-
-def main():
+def main(ui_factory=make_ui):
     args = parse_args()
     try:
         validate_participant(args.participant)
@@ -162,15 +133,16 @@ def main():
                                  save_video=not args.no_video)
     print(f"[INFO] Sesi {writer.session_id} -> {writer.session_dir}")
 
-    cv2.namedWindow(WINDOW, cv2.WINDOW_NORMAL)
+    ui = None
     t0 = time.perf_counter()
     trial_idx, state = 0, "SIAP"
     rec_start, video = None, None
-    info = {}
+    summary, quit_pending = None, False
     end_reason = "selesai"
     consecutive_read_failures = 0
 
     try:
+        ui = ui_factory()
         while trial_idx < len(protocol):
             gesture, rep = protocol[trial_idx]
             ret, frame = cap.read()
@@ -181,7 +153,7 @@ def main():
                     print("[ERROR] Kamera berhenti memberi frame.")
                     end_reason = "kamera_gagal"
                     break
-                if cv2.waitKey(10) & 0xFF in (ord("q"), 27):
+                if "quit" in ui.poll():
                     end_reason = "operator_keluar"
                     break
                 continue
@@ -191,66 +163,71 @@ def main():
             result = hands.process(rgb)
             landmarks, hand_label, hand_score = extract_landmarks(result)
 
+            remaining = args.hold
             if state == "REKAM":
                 writer.add_frame(t_now - rec_start, t_now, (frame.shape[1], frame.shape[0]),
                                  landmarks, hand_label, hand_score)
                 if video is not None:
                     video.write(frame)
-                info["remaining"] = max(0.0, args.hold - (t_now - rec_start))
+                remaining = max(0.0, args.hold - (t_now - rec_start))
                 if t_now - rec_start >= args.hold:
-                    info["summary"] = writer.end_attempt(t_now)
+                    summary = writer.end_attempt(t_now)
                     if video is not None:
                         video.release()
                         video = None
                     state = "TINJAU"
 
+            # --- tampilan -------------------------------------------------
             display = frame.copy()
             if result is not None and result.multi_hand_landmarks:
                 drawer.draw_landmarks(display, result.multi_hand_landmarks[0], mp.solutions.hands.HAND_CONNECTIONS)
             if not args.no_mirror:
                 display = cv2.flip(display, 1)
-            draw_overlay(display, state, trial_idx, len(protocol), gesture, rep, args.reps,
-                         landmarks is not None, info)
-            cv2.imshow(WINDOW, display)
+            ui.render(cv2.cvtColor(display, cv2.COLOR_BGR2RGB), {
+                "state": state, "trial_idx": trial_idx, "n_trials": len(protocol),
+                "gesture": gesture, "rep": rep, "reps": args.reps,
+                "detected": landmarks is not None, "hold": args.hold, "remaining": remaining,
+                "summary": summary, "quit_pending": quit_pending,
+                "warn_threshold": LOW_DETECTION_WARNING,
+            })
 
-            key = cv2.waitKey(1) & 0xFF
-            if key == 255:
-                continue
-
-            if info.get("quit_pending"):
-                info["quit_pending"] = False
-                if key in (ord("q"), ord("Q"), 27):
-                    end_reason = "operator_keluar"
+            # --- tombol ---------------------------------------------------
+            stop = False
+            for key in ui.poll():
+                if quit_pending:
+                    quit_pending = False
+                    if key == "quit":
+                        end_reason, stop = "operator_keluar", True
+                        break
+                    continue
+                if key == "quit":
+                    quit_pending = True
+                elif state == "SIAP" and key == "space":
+                    writer.start_attempt(gesture, rep, t_now)
+                    path = writer.video_path()
+                    if path:
+                        fps = cam_actual["fps_reported"] or CAMERA_CONFIG["fps"]
+                        video = cv2.VideoWriter(path, cv2.VideoWriter_fourcc(*"mp4v"), fps,
+                                                (frame.shape[1], frame.shape[0]))
+                        if not video.isOpened():
+                            print("[PERINGATAN] Video tidak bisa ditulis; landmark tetap disimpan.")
+                            video = None
+                    rec_start, state = t_now, "REKAM"
                     break
-                continue
-            if key in (ord("q"), ord("Q"), 27):
-                info["quit_pending"] = True
-                continue
-
-            if state == "SIAP" and key == ord(" "):
-                writer.start_attempt(gesture, rep, t_now)
-                path = writer.video_path()
-                if path:
-                    fps = cam_actual["fps_reported"] or CAMERA_CONFIG["fps"]
-                    video = cv2.VideoWriter(path, cv2.VideoWriter_fourcc(*"mp4v"), fps,
-                                            (frame.shape[1], frame.shape[0]))
-                    if not video.isOpened():
-                        print("[PERINGATAN] Video tidak bisa ditulis; landmark tetap disimpan.")
-                        video = None
-                rec_start = t_now
-                info = {"remaining": args.hold}
-                state = "REKAM"
-            elif state == "TINJAU" and key in (13, 10):
-                writer.decide(True, "accepted")
-                trial_idx += 1
-                state, info = "SIAP", {}
-            elif state == "TINJAU" and key in (ord("r"), ord("R")):
-                writer.decide(False, "redo")
-                state, info = "SIAP", {}
-            elif state == "TINJAU" and key in (ord("s"), ord("S")):
-                writer.decide(False, "skipped", note="dilewati operator")
-                trial_idx += 1
-                state, info = "SIAP", {}
+                elif state == "TINJAU" and key == "enter":
+                    writer.decide(True, "accepted")
+                    trial_idx, state, summary = trial_idx + 1, "SIAP", None
+                    break
+                elif state == "TINJAU" and key == "r":
+                    writer.decide(False, "redo")
+                    state, summary = "SIAP", None
+                    break
+                elif state == "TINJAU" and key == "s":
+                    writer.decide(False, "skipped", note="dilewati operator")
+                    trial_idx, state, summary = trial_idx + 1, "SIAP", None
+                    break
+            if stop:
+                break
     except KeyboardInterrupt:
         end_reason = "keyboard_interrupt"
     finally:
@@ -259,7 +236,8 @@ def main():
         writer.close(end_reason)
         hands.close()
         cap.release()
-        cv2.destroyAllWindows()
+        if ui is not None:
+            ui.close()
 
     print(f"[INFO] Sesi ditutup ({end_reason}). Data: {writer.session_dir}")
     return 0
