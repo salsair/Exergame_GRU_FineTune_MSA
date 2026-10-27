@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="23" height="15" tilewidth="16" tileheight="16" infinite="0" nextlayerid="11" nextobjectid="288">
+ <tileset firstgid="1" source="floor.tsx"/>
+ <tileset firstgid="573" source="TilesetVillageAbandoned.tsx"/>
+ <tileset firstgid="813" source="TilesetHouse.tsx"/>
+ <tileset firstgid="1572" source="nature.tsx"/>
+ <tileset firstgid="2076" source="objects.tsx"/>
+ <layer id="1" name="Tile Layer 1" width="23" height="15">
+  <data encoding="csv">
+265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,
+265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,
+265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,
+265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,
+265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,
+265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,
+265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,
+265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,
+265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,
+265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,
+265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,
+265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,
+265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,
+265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,
+265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265,265
+</data>
+ </layer>
+ <layer id="2" name="Tile Layer 2" width="23" height="15">
+  <data encoding="csv">
+0,0,0,177,178,178,244,178,179,0,0,0,0,0,0,0,0,0,177,178,178,178,243,
+0,0,0,199,200,200,200,183,179,0,0,0,0,0,0,0,0,0,177,178,178,178,178,
+0,0,0,0,0,0,0,199,201,0,0,0,0,0,0,0,0,0,177,178,178,178,178,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,177,178,178,178,178,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,177,178,178,178,178,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,177,178,178,178,178,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,177,178,178,178,178,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,177,178,178,178,178,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,177,178,178,178,178,
+0,0,155,156,156,157,0,0,0,0,0,0,0,0,0,0,0,0,177,244,178,178,178,
+0,0,177,243,178,179,0,0,0,0,0,0,0,0,0,0,0,0,177,178,178,178,178,
+0,0,177,244,178,204,157,0,0,0,0,0,0,0,0,0,0,0,199,178,178,178,178,
+0,0,199,200,200,183,178,157,0,0,0,0,0,0,0,0,0,0,0,199,178,243,178,
+0,0,0,0,0,177,178,179,0,0,0,0,0,0,0,0,0,0,0,0,177,178,178,
+0,0,0,0,0,177,243,179,0,0,0,0,0,0,0,0,0,0,0,0,177,178,178
+</data>
+ </layer>
+ <layer id="5" name="jalanbatu" width="23" height="15">
+  <data encoding="csv">
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,643,660,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,663,661,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,661,0,660,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,661,0,660,0,0,0,0,0,661,660,663,0,0,0,0,0,0,0,0,0,0,
+661,643,0,663,0,661,660,663,0,660,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,661,0,0,0,0,0,0,660,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,663,0,661,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,661,0,660,0,663,661,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,660,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,643,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,663,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,661,660,0,0,0,0
+</data>
+ </layer>
+ <objectgroup id="10" name="Object Layer 2">
+  <object id="35" name="heart" gid="2089" x="225.08" y="63.6653" width="14" height="12"/>
+  <object id="36" name="heart" gid="2089" x="97.5253" y="110.182" width="14" height="12"/>
+  <object id="134" name="obs" gid="793" x="224.078" y="96.0174" width="16" height="16"/>
+  <object id="135" name="obs" gid="794" x="239.733" y="96.1209" width="16" height="16"/>
+  <object id="136" name="obs" gid="773" x="223.893" y="79.7857" width="16" height="16"/>
+  <object id="137" name="obs" gid="774" x="240.035" y="79.917" width="16" height="16"/>
+  <object id="138" name="obs" gid="795" x="255.809" y="96.0589" width="16" height="16"/>
+  <object id="139" name="obs" gid="796" x="273.106" y="96.0589" width="16" height="16"/>
+  <object id="140" name="obs" gid="776" x="271.925" y="79.7857" width="16" height="16"/>
+  <object id="141" name="obs" gid="775" x="255.783" y="80.0482" width="16" height="16"/>
+  <object id="142" name="obs" gid="755" x="256.045" y="64.0375" width="16" height="16"/>
+  <object id="143" name="obs" gid="754" x="239.904" y="64.0375" width="16" height="16"/>
+  <object id="144" name="obs" gid="733" x="271.925" y="111.938" width="16" height="16"/>
+  <object id="146" name="obs" gid="713" x="271.988" y="96.1413" width="16" height="16"/>
+  <object id="147" name="obs" gid="714" x="288.052" y="96.0581" width="16" height="16"/>
+  <object id="148" name="obs" gid="694" x="288.052" y="80.0483" width="16" height="16"/>
+  <object id="149" name="obs" gid="695" x="304.13" y="80.0968" width="16" height="16"/>
+  <object id="150" name="obs" gid="715" x="303.968" y="96.1128" width="16" height="16"/>
+  <object id="151" name="obs" gid="716" x="320.039" y="95.9183" width="16" height="16"/>
+  <object id="152" name="obs" gid="736" x="320.042" y="112.006" width="16" height="16"/>
+  <object id="153" name="obs" gid="735" x="303.968" y="112.088" width="16" height="16"/>
+  <object id="154" name="obs" gid="734" x="287.886" y="112.11" width="16" height="16"/>
+  <object id="155" name="obs" gid="796" x="351.793" y="47.9458" width="16" height="16"/>
+  <object id="156" name="obs" gid="776" x="351.938" y="32.0406" width="16" height="16"/>
+  <object id="157" name="obs" gid="755" x="335.739" y="16.0572" width="16" height="16"/>
+  <object id="158" name="obs" gid="775" x="336.093" y="32.0473" width="16" height="16"/>
+  <object id="159" name="obs" gid="795" x="335.932" y="47.9326" width="16" height="16"/>
+  <object id="160" name="obs" gid="754" x="319.765" y="16.0966" width="16" height="16"/>
+  <object id="161" name="obs" gid="774" x="320.057" y="32.0733" width="16" height="16"/>
+  <object id="162" name="obs" gid="794" x="319.841" y="47.8566" width="16" height="16"/>
+  <object id="163" name="obs" gid="773" x="304.06" y="32.1253" width="16" height="16"/>
+  <object id="164" name="obs" gid="793" x="303.968" y="48.0173" width="16" height="16"/>
+  <object id="173" name="obs" gid="787" x="352.133" y="223.785" width="16" height="16"/>
+  <object id="174" name="obs" gid="767" x="352.166" y="207.731" width="16" height="16"/>
+  <object id="175" name="obs" gid="747" x="352.332" y="191.837" width="16" height="16"/>
+  <object id="176" name="obs" gid="727" x="352.159" y="175.886" width="16" height="16"/>
+  <object id="177" name="obs" gid="707" x="352.067" y="159.968" width="16" height="16"/>
+  <object id="178" name="obs" gid="706" x="335.958" y="159.965" width="16" height="16"/>
+  <object id="179" name="obs" gid="726" x="336.195" y="175.993" width="16" height="16"/>
+  <object id="180" name="obs" gid="746" x="336.253" y="191.952" width="16" height="16"/>
+  <object id="181" name="obs" gid="766" x="336.195" y="207.93" width="16" height="16"/>
+  <object id="182" name="obs" gid="786" x="336.483" y="223.966" width="16" height="16"/>
+  <object id="183" name="obs" gid="785" x="320.333" y="223.506" width="16" height="16"/>
+  <object id="184" name="obs" gid="765" x="320.278" y="207.765" width="16" height="16"/>
+  <object id="185" name="obs" gid="745" x="320.194" y="191.688" width="16" height="16"/>
+  <object id="186" name="obs" gid="725" x="320.13" y="175.767" width="16" height="16"/>
+  <object id="187" name="obs" gid="705" x="320.015" y="159.785" width="16" height="16"/>
+  <object id="188" name="obs" gid="800" x="160.315" y="240.076" width="16" height="16"/>
+  <object id="189" name="obs" gid="801" x="175.685" y="239.992" width="16" height="16"/>
+  <object id="190" name="obs" gid="780" x="160.341" y="224.08" width="16" height="16"/>
+  <object id="191" name="obs" gid="781" x="175.757" y="224.044" width="16" height="16"/>
+  <object id="192" name="obs" gid="782" x="191.99" y="224.116" width="16" height="16"/>
+  <object id="193" name="obs" gid="783" x="208.223" y="224.08" width="16" height="16"/>
+  <object id="194" name="obs" gid="784" x="224.206" y="224.08" width="16" height="16"/>
+  <object id="195" name="obs" gid="764" x="224.1" y="208.451" width="16" height="16"/>
+  <object id="196" name="obs" gid="763" x="208.151" y="208.203" width="16" height="16"/>
+  <object id="197" name="obs" gid="762" x="192.025" y="208.132" width="16" height="16"/>
+  <object id="198" name="obs" gid="761" x="176.041" y="207.99" width="16" height="16"/>
+  <object id="199" name="obs" gid="760" x="160.199" y="208.06" width="16" height="16"/>
+  <object id="200" name="obs" gid="741" x="176.041" y="192.041" width="16" height="16"/>
+  <object id="201" name="obs" gid="740" x="160.235" y="192.219" width="16" height="16"/>
+  <object id="202" name="obs" gid="675" x="128.041" y="239.946" width="16" height="16"/>
+  <object id="203" name="obs" gid="655" x="128.106" y="224.245" width="16" height="16"/>
+  <object id="204" name="obs" gid="635" x="128.123" y="208.366" width="16" height="16"/>
+  <object id="205" name="obs" gid="586" x="80.0872" y="47.9913" width="16" height="16"/>
+  <object id="206" name="obs" gid="606" x="79.8663" y="63.8598" width="16" height="16"/>
+  <object id="207" name="obs" gid="626" x="79.9412" y="79.732" width="16" height="16"/>
+  <object id="208" name="obs" gid="585" x="64.1402" y="47.9314" width="16" height="16"/>
+  <object id="209" name="obs" gid="605" x="64.2076" y="64.0021" width="16" height="16"/>
+  <object id="210" name="obs" gid="625" x="64.1889" y="79.9305" width="16" height="16"/>
+  <object id="211" name="obs" gid="584" x="48.1894" y="48.1822" width="16" height="16"/>
+  <object id="212" name="obs" gid="604" x="48.1406" y="63.8896" width="16" height="16"/>
+  <object id="213" name="obs" gid="624" x="48.2118" y="79.8743" width="16" height="16"/>
+  <object id="214" name="obs" gid="658" x="96.1617" y="79.8406" width="16" height="16"/>
+  <object id="215" name="obs" gid="638" x="95.6786" y="63.8262" width="16" height="16"/>
+  <object id="216" name="obs" gid="677" x="32.1866" y="79.7523" width="16" height="16"/>
+  <object id="217" name="obs" gid="739" x="64.1475" y="15.8019" width="16" height="16"/>
+  <object id="219" name="obs" gid="720" x="303.316" y="176.855" width="16" height="16"/>
+  <object id="220" name="obs" gid="577" x="159.894" y="15.9359" width="16" height="16"/>
+  <object id="221" name="obs" gid="578" x="175.848" y="15.8054" width="16" height="16"/>
+  <object id="222" name="obs" gid="579" x="192.046" y="15.937" width="16" height="16"/>
+  <object id="223" name="obs" gid="580" x="207.945" y="15.5421" width="16" height="16"/>
+  <object id="224" name="obs" gid="597" x="160.127" y="31.7604" width="16" height="16"/>
+  <object id="225" name="obs" gid="598" x="176.059" y="31.6037" width="16" height="16"/>
+  <object id="226" name="obs" gid="599" x="192.036" y="31.8731" width="16" height="16"/>
+  <object id="227" name="obs" gid="600" x="207.628" y="31.6037" width="16" height="16"/>
+  <object id="228" name="obs" gid="617" x="160.297" y="47.0036" width="16" height="16"/>
+  <object id="229" name="obs" gid="618" x="176.028" y="46.3571" width="16" height="16"/>
+  <object id="230" name="obs" gid="619" x="191.912" y="47.7809" width="16" height="16"/>
+  <object id="231" name="obs" gid="620" x="207.833" y="47.7809" width="16" height="16"/>
+  <object id="234" name="obs" gid="799" x="144.929" y="31.5275" width="16" height="16"/>
+  <object id="251" name="obs" gid="576" x="143.841" y="144.186" width="16" height="16"/>
+  <object id="252" name="obs" gid="596" x="144.256" y="160.192" width="16" height="16"/>
+  <object id="253" name="obs" gid="616" x="143.944" y="175.937" width="16" height="16"/>
+  <object id="254" name="obs" gid="575" x="128.08" y="144.084" width="16" height="16"/>
+  <object id="255" name="obs" gid="595" x="128.101" y="160.132" width="16" height="16"/>
+  <object id="256" name="obs" gid="615" x="128.057" y="175.919" width="16" height="16"/>
+  <object id="257" name="obs" gid="574" x="112.21" y="144.097" width="16" height="16"/>
+  <object id="258" name="obs" gid="594" x="112.178" y="160.058" width="16" height="16"/>
+  <object id="259" name="obs" gid="614" x="112.066" y="175.95" width="16" height="16"/>
+  <object id="260" name="obs" gid="573" x="95.9798" y="143.564" width="16" height="16"/>
+  <object id="261" name="obs" gid="593" x="96.1617" y="160.075" width="16" height="16"/>
+  <object id="262" name="obs" gid="613" x="96.2141" y="176.022" width="16" height="16"/>
+  <object id="263" name="obs" gid="702" x="16.276" y="240.115" width="16" height="16"/>
+  <object id="264" name="obs" gid="703" x="31.1267" y="239.717" width="16" height="16"/>
+  <object id="265" name="obs" gid="683" x="31.559" y="223.737" width="16" height="16"/>
+  <object id="266" name="obs" gid="682" x="16.2589" y="224.162" width="16" height="16"/>
+  <object id="271" name="obs" gid="802" x="47.8114" y="239.81" width="16" height="16"/>
+  <object id="273" name="obs" gid="742" x="0.137167" y="48.0369" width="16" height="16"/>
+  <object id="274" name="obs" gid="722" x="0.1085" y="32.0844" width="16" height="16"/>
+  <object id="275" name="obs" gid="723" x="16.0801" y="31.9229" width="16" height="16"/>
+  <object id="276" name="obs" gid="743" x="15.9187" y="47.918" width="16" height="16"/>
+  <object id="277" name="obs" gid="653" x="208.118" y="143.863" width="16" height="16"/>
+  <object id="278" name="obs" gid="633" x="208.014" y="128.173" width="16" height="16"/>
+  <object id="279" name="obs" gid="634" x="224.06" y="128.054" width="16" height="16"/>
+  <object id="280" name="obs" gid="654" x="223.869" y="143.707" width="16" height="16"/>
+  <object id="282" name="obs" gid="739" x="64.1681" y="192.327" width="16" height="16"/>
+  <object id="283" name="heart" gid="2089" x="240.531" y="129.33" width="14" height="12"/>
+  <object id="284" name="heart" gid="2089" x="82.0158" y="157.964" width="14" height="12"/>
+  <object id="285" name="obs" gid="656" x="159.948" y="175.93" width="16" height="16"/>
+  <object id="287" name="obs" gid="636" x="159.917" y="160.112" width="16" height="16"/>
+ </objectgroup>
+</map>

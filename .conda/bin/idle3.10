@@ -1,0 +1,5 @@
+#!/Users/luthfi/Downloads/Exergame_LSTM_Stroke-main/.conda/bin/python3.10
+
+from idlelib.pyshell import main
+if __name__ == '__main__':
+    main()

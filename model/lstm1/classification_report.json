@@ -1,0 +1,39 @@
+{
+    "palm": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 291.0
+    },
+    "fist": {
+        "precision": 0.922077922077922,
+        "recall": 0.9861111111111112,
+        "f1-score": 0.9530201342281879,
+        "support": 72.0
+    },
+    "thumb_index": {
+        "precision": 0.9951690821256038,
+        "recall": 0.9671361502347418,
+        "f1-score": 0.9809523809523809,
+        "support": 213.0
+    },
+    "grabbing": {
+        "precision": 0.9941176470588236,
+        "recall": 1.0,
+        "f1-score": 0.9970501474926253,
+        "support": 169.0
+    },
+    "accuracy": 0.9892617449664429,
+    "macro avg": {
+        "precision": 0.9778411628155874,
+        "recall": 0.9883118153364632,
+        "f1-score": 0.9827556656682985,
+        "support": 745.0
+    },
+    "weighted avg": {
+        "precision": 0.9897537009869867,
+        "recall": 0.9892617449664429,
+        "f1-score": 0.9893446734678394,
+        "support": 745.0
+    }
+}
