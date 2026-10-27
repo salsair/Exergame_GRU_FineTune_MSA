@@ -63,7 +63,7 @@ class TestWriter(unittest.TestCase):
         self.assertAlmostEqual(s["effective_fps"], 30.0)
         w.decide(False, "redo")
         self.record(w, "palm", 1, 5.0)
-        w.decide(True, "accepted")
+        w.decide(True, "accepted", gesture_form="penuh")
         self.record(w, "fist", 1, 9.0, n=10)
         w.decide(False, "skipped", note="tidak mampu")
         w.close("selesai")
@@ -72,6 +72,8 @@ class TestWriter(unittest.TestCase):
         self.assertEqual([t["attempt_id"] for t in trials], ["palm_r1_a1", "palm_r1_a2", "fist_r1_a1"])
         self.assertEqual([t["accepted"] for t in trials], ["0", "1", "0"])
         self.assertEqual([t["decision"] for t in trials], ["redo", "accepted", "skipped"])
+        self.assertEqual([t["gesture_formed"] for t in trials], ["", "ya", "tidak"])
+        self.assertEqual([t["gesture_form"] for t in trials], ["", "penuh", ""])
 
         frames = read_csv(os.path.join(w.session_dir, "frames.csv"))
         self.assertEqual(len(frames), 60 + 60 + 10)
@@ -106,10 +108,40 @@ class TestWriter(unittest.TestCase):
         w.start_attempt("palm", 1, 0.0)
         lm = np.random.default_rng(7).uniform(0, 1, (21, 3))
         w.add_frame(0.0, 0.0, (1280, 720), lm, "Right", 0.99)
-        w.end_attempt(0.1); w.decide(True, "accepted"); w.close("selesai")
+        w.end_attempt(0.1); w.decide(True, "accepted", gesture_form="penuh"); w.close("selesai")
         row = read_csv(os.path.join(w.session_dir, "frames.csv"))[0]
         back = np.array([float(row[f"lm{i}_{a}"]) for i in range(21) for a in "xyz"]).reshape(21, 3)
         self.assertLess(np.abs(back - lm).max(), 1e-7)
+
+    def test_accept_requires_gesture_form(self):
+        w = self.make()
+        self.record(w, "palm", 1, 0.0, n=5)
+        with self.assertRaises(ValueError):
+            w.decide(True, "accepted")
+        with self.assertRaises(ValueError):
+            w.decide(False, "tidak_dikenal")
+        w.decide(True, "accepted", gesture_form="sebagian")
+        w.close("selesai")
+
+    def test_participant_registry_appends(self):
+        from stage1_writer import append_participant_registry, existing_sessions
+        info = {"participant": "P01", "usia": "60", "sisi_paretik": "kiri", "nama": "JANGAN DISIMPAN"}
+        path = append_participant_registry(self.tmp, "P01_S1_a", info)
+        append_participant_registry(self.tmp, "P01_S1_b", info)
+        rows = read_csv(path)
+        self.assertEqual([r["session_id"] for r in rows], ["P01_S1_a", "P01_S1_b"])
+        self.assertNotIn("nama", rows[0])
+        w = self.make()
+        self.assertEqual(existing_sessions(self.tmp, "P01"), [w.session_id])
+        self.assertEqual(existing_sessions(self.tmp, "P02"), [])
+        w.close("selesai")
+
+    def test_set_metadata_persists(self):
+        w = self.make()
+        w.set_metadata(privacy_check={"confirmed": True})
+        with open(os.path.join(w.session_dir, "session.json"), encoding="utf-8") as f:
+            self.assertTrue(json.load(f)["privacy_check"]["confirmed"])
+        w.close("selesai")
 
     def test_refuses_to_overwrite_session(self):
         w = self.make()

@@ -27,7 +27,7 @@ from datetime import datetime
 
 from gesture_pipeline import GESTURE_LABELS, LABEL_TO_INDEX, NUM_LANDMARKS
 
-SCHEMA_VERSION = "stage1-v1"
+SCHEMA_VERSION = "stage1-v2"  # v2: kolom gesture_formed, gesture_form
 PARTICIPANT_PATTERN = re.compile(r"^P\d{2}$")
 HAND_STATUS_VALUES = ("paretik", "nonparetik")
 HAND_SIDE_VALUES = ("kiri", "kanan")
@@ -47,7 +47,18 @@ TRIAL_COLUMNS = [
     "trial_id", "attempt_id", "gesture", "gesture_index", "repetition", "attempt",
     "t_start_session_s", "t_end_session_s", "duration_s",
     "n_frames", "n_detected", "detection_rate", "effective_fps",
-    "accepted", "decision", "video_file", "note",
+    "accepted", "decision", "gesture_formed", "gesture_form", "video_file", "note",
+]
+
+# Lembar Pengumpul Data 1, bagian III: "Terbentuk & ditahan ±2 detik" dan
+# "Bentuk gestur Penuh/Sebagian".
+GESTURE_FORM_VALUES = ("penuh", "sebagian")
+DECISION_VALUES = ("accepted", "redo", "skipped", "aborted")
+
+PARTICIPANT_REGISTRY = "participants.csv"
+PARTICIPANT_REGISTRY_COLUMNS = [
+    "session_id", "participant", "tanggal", "usia", "jenis_kelamin", "tangan_dominan",
+    "sisi_paretik", "memenuhi_syarat", "consent", "consent_tanggal", "diperiksa_oleh",
 ]
 
 
@@ -217,11 +228,22 @@ class Stage1SessionWriter:
             "duration_s": dur,
         }
 
-    def decide(self, accepted, decision, note=""):
-        """decision: 'accepted' | 'redo' | 'skipped' | 'aborted'."""
+    def decide(self, accepted, decision, note="", gesture_form=""):
+        """
+        decision: 'accepted' | 'redo' | 'skipped' | 'aborted'.
+        gesture_form: 'penuh' | 'sebagian' untuk percobaan yang diterima.
+        gesture_formed (kolom Lembar 1): 'ya' bila diterima, 'tidak' bila dilewati.
+        """
         cur = self._current
         if cur is None or "t_end_session_s" not in cur:
             raise RuntimeError("decide dipanggil sebelum end_attempt")
+        if decision not in DECISION_VALUES:
+            raise ValueError(f"decision tidak dikenal: {decision}")
+        if accepted and gesture_form not in GESTURE_FORM_VALUES:
+            raise ValueError("Percobaan yang diterima harus diberi bentuk 'penuh' atau 'sebagian'")
+        if not accepted:
+            gesture_form = ""
+        formed = {"accepted": "ya", "skipped": "tidak"}.get(decision, "")
         s = self.summary()
         row = {k: cur.get(k, "") for k in TRIAL_COLUMNS}
         row.update({
@@ -232,12 +254,19 @@ class Stage1SessionWriter:
             "effective_fps": f"{s['effective_fps']:.2f}",
             "accepted": int(bool(accepted)),
             "decision": decision,
+            "gesture_formed": formed,
+            "gesture_form": gesture_form,
             "note": note,
         })
         self._trials.writerow(row)
         self._trials_f.flush()
         self._current = None
         return row
+
+    def set_metadata(self, **fields):
+        """Tambah/ubah field session.json (mis. konfirmasi privasi) dan simpan segera."""
+        self.metadata.update(fields)
+        self._write_metadata()
 
     def close(self, end_reason):
         if self.closed:
@@ -253,3 +282,29 @@ class Stage1SessionWriter:
         self.metadata["end_reason"] = end_reason
         self._write_metadata()
         self.closed = True
+
+
+def append_participant_registry(root_dir, session_id, info):
+    """
+    Tambah satu baris ke data/stage1/participants.csv (satu baris per sesi).
+    Hanya kode partisipan dan data non-identitas; nama dan No. RM tidak pernah
+    disimpan secara digital (Lembar Pengumpul Data 1, catatan bagian I).
+    """
+    os.makedirs(root_dir, exist_ok=True)
+    path = os.path.join(root_dir, PARTICIPANT_REGISTRY)
+    new = not os.path.exists(path)
+    row = {k: info.get(k, "") for k in PARTICIPANT_REGISTRY_COLUMNS}
+    row["session_id"] = session_id
+    with open(path, "a", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=PARTICIPANT_REGISTRY_COLUMNS)
+        if new:
+            w.writeheader()
+        w.writerow(row)
+    return path
+
+
+def existing_sessions(root_dir, participant):
+    pdir = os.path.join(root_dir, participant)
+    if not os.path.isdir(pdir):
+        return []
+    return sorted(d for d in os.listdir(pdir) if os.path.isdir(os.path.join(pdir, d)))

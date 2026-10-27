@@ -48,6 +48,9 @@ CAMERA_CONFIG = {
     "width": 1280,
     "height": 720,
     "fps": 30,
+    # Banyak webcam USB (termasuk Logitech C922) hanya memberi 30 FPS pada
+    # 720p dalam format MJPG; format mentah YUY2 dibatasi ~10 FPS oleh USB 2.0.
+    "fourcc": "MJPG",
 }
 
 # Sama dengan baseline camera.py agar distribusi landmark konsisten.
@@ -146,14 +149,20 @@ def open_camera(index=0, config=CAMERA_CONFIG):
         cap.release()
         return None, None
 
+    # FOURCC harus diminta sebelum resolusi agar driver memilih mode MJPG.
+    if config.get("fourcc"):
+        cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*config["fourcc"]))
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, config["width"])
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, config["height"])
     cap.set(cv2.CAP_PROP_FPS, config["fps"])
 
+    code = int(cap.get(cv2.CAP_PROP_FOURCC))
+    fourcc = "".join(chr((code >> 8 * i) & 0xFF) for i in range(4)) if code > 0 else ""
     actual = {
         "width": int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
         "height": int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
         "fps_reported": float(cap.get(cv2.CAP_PROP_FPS)),
+        "fourcc": fourcc,
         "backend": cap.getBackendName() if hasattr(cap, "getBackendName") else str(backend),
     }
     return cap, actual
